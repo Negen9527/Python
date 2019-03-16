@@ -17,10 +17,13 @@ from socket import SOCK_STREAM
 from PyQt5.QtGui import QFont, QTextCursor
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QLabel, QLineEdit, QPushButton, QPlainTextEdit
 
+from threading import Thread
 
 class MainFrame(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.client = socket.socket(AF_INET, SOCK_STREAM)
+        self.client.connect(("127.0.0.1", 6666))
         self.initUI()
 
     def initUI(self):
@@ -48,13 +51,21 @@ class MainFrame(QMainWindow):
     def clickHandel(self):
         inputs = self.edit.text()
         self.b.insertPlainText("your say：" + inputs + '\n')
+        self.client.send(bytes(inputs, 'utf-8'))
         self.edit.setText("")
         self.b.moveCursor(QTextCursor.End)
-        print(inputs)
 
 
-# client = socket.socket(AF_INET, SOCK_STREAM)
-# client.connect(("127.0.0.1", 6666))
+
+    def showMsg(self):
+        #显示收到得消息
+        while True:
+            receivedMsg = self.client.recv(1024).decode()
+            if receivedMsg != "":
+                self.b.insertPlainText(receivedMsg + '\n')
+
+
+
 # client.send(bytes("你好啊", encoding="utf-8"))
 # while True:
 #     data = client.recv(1024).decode()
@@ -66,4 +77,6 @@ if __name__ == '__main__':
     a = MainFrame()
     a.btn.clicked.connect(a.clickHandel)
     a.show()
+    showMsgThread = Thread(target=a.showMsg, args=())
+    showMsgThread.start()
     sys.exit(app.exec_())
